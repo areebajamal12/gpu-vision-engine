@@ -118,3 +118,19 @@ Run the complete T4 workflow with:
 ```
 
 The result is written to `/kaggle/working/resize-m4-t4.json`.
+
+## Milestone 5: nuScenes LiDAR voxelization
+
+Milestone 5 consumes a real nuScenes LiDAR `.pcd.bin` sweep. Each five-float record contains x, y, z, intensity, and ring index; voxel statistics use x, y, z, and intensity. The benchmark does not generate or silently substitute synthetic data.
+
+The grid covers x and y in `[-50, 50)` metres and z in `[-5, 3)` metres, with `0.25 × 0.25 × 0.20` metre voxels. Non-finite points and points outside the half-open bounds are rejected. Occupied voxels are sorted by their linear z-y-x index and contain a point count plus fixed-point sums of x, y, z, and intensity. Integer aggregation makes the result independent of reduction order.
+
+The CPU path maps points, stable-sorts them by voxel index, and reduces adjacent records. CUDA follows the same race-free design: a mapping kernel produces keys and fixed-point features, then stable key sorting and segmented reduction produce deterministic sparse voxel statistics. The benchmark requires an exact CUDA-to-CPU match before it writes timing evidence.
+
+No Milestone 5 performance results are published yet. To run the one-shot workflow, attach a licensed nuScenes dataset to a Kaggle notebook with a Tesla T4 and Internet enabled, then run:
+
+```bash
+!bash <(curl -fsSL https://raw.githubusercontent.com/areebajamal12/gpu-vision-engine/main/kaggle/run_t4_voxelization_benchmark.sh)
+```
+
+The script finds the first `samples/LIDAR_TOP/*.pcd.bin` sweep under `/kaggle/input`, runs all tests, performs 10 warm-ups and 100 measured iterations, and writes `/kaggle/working/voxelization-m5-t4.json`. The result records the sweep filename, SHA-256, input/valid/rejected point counts, occupied voxel count, grid definition, environment, timing methodology, mean, p95, throughput, and speedup. The README will only gain performance values after that JSON is verified and committed.

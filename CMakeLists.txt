@@ -30,6 +30,7 @@ add_library(gve_cpu
   src/cpu/gaussian_blur.cpp
   src/cpu/resize.cpp
   src/cpu/sobel.cpp
+  src/cpu/voxelization.cpp
   src/reference/opencv_gaussian_blur.cpp
   src/reference/opencv_resize.cpp
   src/reference/opencv_sobel.cpp)
@@ -38,7 +39,11 @@ target_link_libraries(gve_cpu PUBLIC opencv_core opencv_imgproc)
 target_compile_options(gve_cpu PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall;-Wextra;-Wpedantic>)
 
 if(GVE_HAS_CUDA)
-  add_library(gve_cuda src/cuda/gaussian_blur.cu src/cuda/resize.cu src/cuda/sobel.cu)
+  add_library(gve_cuda
+    src/cuda/gaussian_blur.cu
+    src/cuda/resize.cu
+    src/cuda/sobel.cu
+    src/cuda/voxelization.cu)
   target_include_directories(gve_cuda PUBLIC include)
   target_link_libraries(gve_cuda PUBLIC CUDA::cudart opencv_core)
   set_target_properties(gve_cuda PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON CUDA_ARCHITECTURES 75)
@@ -81,6 +86,20 @@ if(GVE_BUILD_BENCHMARKS)
       GVE_CUDA_COMPILER="${CMAKE_CUDA_COMPILER_ID} ${CMAKE_CUDA_COMPILER_VERSION}"
       GVE_CUDA_FLAGS="${CMAKE_CUDA_FLAGS} $<$<CONFIG:Release>:${CMAKE_CUDA_FLAGS_RELEASE}> $<$<CONFIG:Debug>:${CMAKE_CUDA_FLAGS_DEBUG}>")
   endif()
+
+  add_executable(voxelization_benchmark
+    benchmarks/voxelization_benchmark.cpp
+    benchmarks/environment.cpp)
+  target_include_directories(voxelization_benchmark PRIVATE include benchmarks)
+  target_link_libraries(voxelization_benchmark PRIVATE gve_cpu)
+  target_compile_definitions(voxelization_benchmark PRIVATE
+    GVE_COMPILER_FLAGS="${CMAKE_CXX_FLAGS} $<$<CONFIG:Release>:${CMAKE_CXX_FLAGS_RELEASE}> $<$<CONFIG:Debug>:${CMAKE_CXX_FLAGS_DEBUG}>")
+  if(GVE_HAS_CUDA)
+    target_link_libraries(voxelization_benchmark PRIVATE gve_cuda CUDA::cudart)
+    target_compile_definitions(voxelization_benchmark PRIVATE GVE_HAS_CUDA=1
+      GVE_CUDA_COMPILER="${CMAKE_CUDA_COMPILER_ID} ${CMAKE_CUDA_COMPILER_VERSION}"
+      GVE_CUDA_FLAGS="${CMAKE_CUDA_FLAGS} $<$<CONFIG:Release>:${CMAKE_CUDA_FLAGS_RELEASE}> $<$<CONFIG:Debug>:${CMAKE_CUDA_FLAGS_DEBUG}>")
+  endif()
 endif()
 
 if(GVE_BUILD_TESTS)
@@ -89,7 +108,11 @@ if(GVE_BUILD_TESTS)
   FetchContent_Declare(googletest URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
-  add_executable(gve_tests tests/gaussian_blur_test.cpp tests/resize_test.cpp tests/sobel_test.cpp)
+  add_executable(gve_tests
+    tests/gaussian_blur_test.cpp
+    tests/resize_test.cpp
+    tests/sobel_test.cpp
+    tests/voxelization_test.cpp)
   target_link_libraries(gve_tests PRIVATE gve_cpu GTest::gtest_main)
   if(GVE_HAS_CUDA)
     target_link_libraries(gve_tests PRIVATE gve_cuda CUDA::cudart)
