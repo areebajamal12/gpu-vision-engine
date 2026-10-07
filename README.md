@@ -2,6 +2,8 @@
 
 A C++17/CUDA library of hand-written image and LiDAR kernels, built around correctness-gated CPU/OpenCV references and reproducible Tesla T4 benchmarks.
 
+**Project prompt:** Can I make the kind of data an autonomous car processes run much faster by using the GPU instead of the CPU?
+
 The project covers separable Gaussian blur, Sobel edge detection, bilinear resize, and deterministic voxelization of real nuScenes LiDAR sweeps. CUDA is enabled automatically when `nvcc` is available; the same tree builds CPU-only on macOS.
 
 ## Performance highlights
