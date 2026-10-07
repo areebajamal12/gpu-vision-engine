@@ -1,0 +1,25 @@
+{
+  "schema_version": 2,
+  "correctness_gate_passed": true,
+  "environment": {
+    "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+    "gpu_model": "Tesla T4",
+    "cuda_runtime_version": "12.8",
+    "cuda_toolkit_version": "12.8",
+    "cuda_driver_version": "13.0",
+    "compiler": "13.3.0",
+    "compiler_flags": " -O3 -DNDEBUG ",
+    "cuda_compiler": "NVIDIA 12.8.93",
+    "cuda_compiler_flags": " -O3 -DNDEBUG "
+  },
+  "workload": {"width": 1920, "height": 1080, "pixel_format": "float32_grayscale", "kernel_size": 9, "sigma": 2.000000},
+  "protocol": {"warmup_iterations": 10, "measured_iterations": 100, "cpu_timer": "std::chrono::steady_clock", "gpu_kernel_timer": "CUDA events", "gpu_end_to_end_timer": "std::chrono::steady_clock around allocation, H2D, kernels, D2H"},
+  "results": [
+    {"implementation": "cpu_separable", "timing_scope": "operation", "mean_ms": 49.363790, "p95_ms": 50.999295, "throughput_megapixels_per_second": 42.006499, "max_abs_error": 0.000000, "tolerance": 0.000100, "mean_speedup_vs_naive": null, "p95_speedup_vs_naive": null},
+    {"implementation": "opencv_reference", "timing_scope": "operation", "mean_ms": 4.020204, "p95_ms": 5.893479, "throughput_megapixels_per_second": 515.794756, "max_abs_error": 0.000000, "tolerance": 0.000000, "mean_speedup_vs_naive": null, "p95_speedup_vs_naive": null},
+    {"implementation": "cuda_naive", "timing_scope": "kernel_only", "mean_ms": 0.363834, "p95_ms": 0.426688, "throughput_megapixels_per_second": 5699.298681, "max_abs_error": 0.000000, "tolerance": 0.001000, "mean_speedup_vs_naive": 1.000000, "p95_speedup_vs_naive": 1.000000},
+    {"implementation": "cuda_naive", "timing_scope": "end_to_end", "mean_ms": 4.402109, "p95_ms": 4.711422, "throughput_megapixels_per_second": 471.046912, "max_abs_error": 0.000000, "tolerance": 0.001000, "mean_speedup_vs_naive": 1.000000, "p95_speedup_vs_naive": 1.000000},
+    {"implementation": "cuda_tiled", "timing_scope": "kernel_only", "mean_ms": 0.279515, "p95_ms": 0.312096, "throughput_megapixels_per_second": 7418.559012, "max_abs_error": 0.000000, "tolerance": 0.001000, "mean_speedup_vs_naive": 1.301662, "p95_speedup_vs_naive": 1.367169},
+    {"implementation": "cuda_tiled", "timing_scope": "end_to_end", "mean_ms": 4.387453, "p95_ms": 4.776742, "throughput_megapixels_per_second": 472.620442, "max_abs_error": 0.000000, "tolerance": 0.001000, "mean_speedup_vs_naive": 1.003340, "p95_speedup_vs_naive": 0.986325}
+  ]
+}

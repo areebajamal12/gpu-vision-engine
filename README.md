@@ -4,7 +4,18 @@ A C++17/CUDA library for hand-written image and LiDAR processing kernels, with C
 
 ## Measured results
 
-No benchmark results are published yet. Results will be added only after the correctness gate passes on the measured system, with the generated JSON committed as evidence. The Kaggle workflow below is prepared for a Tesla T4 run and reports CPU, OpenCV, naive CUDA, and tiled CUDA measurements.
+Correctness passed for every implementation before timing. These measurements are from a Kaggle Tesla T4 with a 1920×1080 float32 image, 9×9 kernel, sigma 2.0, 10 warm-ups, and 100 measured iterations. The saved evidence is [`benchmark-results/gaussian-blur-m2-t4.json`](benchmark-results/gaussian-blur-m2-t4.json).
+
+| Implementation | Scope | Mean (ms) | p95 (ms) | Throughput (MP/s) | Mean speedup | p95 speedup |
+|---|---|---:|---:|---:|---:|---:|
+| CPU separable | Operation | 49.364 | 50.999 | 42.0 | — | — |
+| OpenCV reference | Operation | 4.020 | 5.893 | 515.8 | — | — |
+| CUDA naive | Kernel only | 0.364 | 0.427 | 5699.3 | 1.00× | 1.00× |
+| CUDA naive | End to end | 4.402 | 4.711 | 471.0 | 1.00× | 1.00× |
+| CUDA tiled | Kernel only | 0.280 | 0.312 | 7418.6 | 1.30× | 1.37× |
+| CUDA tiled | End to end | 4.387 | 4.777 | 472.6 | 1.00× | 0.99× |
+
+Shared-memory tiling reduced measured mean kernel-only latency by 23.2% (1.30× speedup). End-to-end mean latency was effectively unchanged because allocation and transfers dominate this baseline API path.
 
 ## Milestone 1 architecture
 
