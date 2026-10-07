@@ -64,22 +64,25 @@ cv::Mat run_resize_cuda(const cv::Mat& input, cv::Size output_size, CudaTiming* 
       static_cast<size_t>(output_size.width) * output_size.height * sizeof(float);
   float* device_input = nullptr;
   float* device_output = nullptr;
+  cudaArray_t input_array = nullptr;
   cudaTextureObject_t texture = 0;
   cudaEvent_t start;
   cudaEvent_t stop;
   const auto total_start = std::chrono::steady_clock::now();
-  check_resize(cudaMalloc(&device_input, input_bytes), "cudaMalloc input");
+  if (backend == ResizeBackend::kNaive)
+    check_resize(cudaMalloc(&device_input, input_bytes), "cudaMalloc input");
   check_resize(cudaMalloc(&device_output, output_bytes), "cudaMalloc output");
-  check_resize(cudaMemcpy(device_input, input.ptr<float>(), input_bytes, cudaMemcpyHostToDevice),
-               "copy input");
   if (backend == ResizeBackend::kTexture) {
+    const cudaChannelFormatDesc channel = cudaCreateChannelDesc<float>();
+    check_resize(cudaMallocArray(&input_array, &channel, input.cols, input.rows),
+                 "cudaMallocArray input");
+    check_resize(cudaMemcpy2DToArray(input_array, 0, 0, input.ptr<float>(),
+                                    input.cols * sizeof(float), input.cols * sizeof(float),
+                                    input.rows, cudaMemcpyHostToDevice),
+                 "copy input to CUDA array");
     cudaResourceDesc resource{};
-    resource.resType = cudaResourceTypePitch2D;
-    resource.res.pitch2D.devPtr = device_input;
-    resource.res.pitch2D.desc = cudaCreateChannelDesc<float>();
-    resource.res.pitch2D.width = input.cols;
-    resource.res.pitch2D.height = input.rows;
-    resource.res.pitch2D.pitchInBytes = input.cols * sizeof(float);
+    resource.resType = cudaResourceTypeArray;
+    resource.res.array.array = input_array;
     cudaTextureDesc description{};
     description.addressMode[0] = cudaAddressModeClamp;
     description.addressMode[1] = cudaAddressModeClamp;
@@ -88,7 +91,9 @@ cv::Mat run_resize_cuda(const cv::Mat& input, cv::Size output_size, CudaTiming* 
     description.normalizedCoords = 0;
     check_resize(cudaCreateTextureObject(&texture, &resource, &description, nullptr),
                  "create texture object");
-  }
+  } else
+    check_resize(cudaMemcpy(device_input, input.ptr<float>(), input_bytes, cudaMemcpyHostToDevice),
+                 "copy input");
   check_resize(cudaEventCreate(&start), "create start event");
   check_resize(cudaEventCreate(&stop), "create stop event");
   const dim3 block(32, 8);
@@ -118,6 +123,7 @@ cv::Mat run_resize_cuda(const cv::Mat& input, cv::Size output_size, CudaTiming* 
   cudaEventDestroy(start);
   cudaEventDestroy(stop);
   if (texture) cudaDestroyTextureObject(texture);
+  if (input_array) cudaFreeArray(input_array);
   cudaFree(device_input);
   cudaFree(device_output);
   return output;
