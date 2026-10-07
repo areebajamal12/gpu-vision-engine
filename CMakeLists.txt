@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(GVE_ENABLE_CUDA "Enable CUDA automatically when a compiler is available" ON)
 option(GVE_BUILD_TESTS "Build tests" ON)
 option(GVE_BUILD_BENCHMARKS "Build benchmarks" ON)
+option(GVE_BUILD_VIEWER "Build the optional OpenGL nuScenes viewer" OFF)
 
 find_package(OpenCV REQUIRED COMPONENTS core imgproc)
 
@@ -120,4 +121,26 @@ if(GVE_BUILD_TESTS)
   endif()
   include(GoogleTest)
   gtest_discover_tests(gve_tests)
+endif()
+
+if(GVE_BUILD_VIEWER)
+  find_package(OpenGL REQUIRED)
+  include(FetchContent)
+  FetchContent_Declare(glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG 3.4
+    GIT_SHALLOW TRUE)
+  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(glfw)
+  add_executable(voxel_viewer viewer/voxel_viewer.cpp)
+  target_include_directories(voxel_viewer PRIVATE include)
+  target_link_libraries(voxel_viewer PRIVATE gve_cpu glfw OpenGL::GL)
+  if(APPLE)
+    target_compile_definitions(voxel_viewer PRIVATE GL_SILENCE_DEPRECATION)
+  endif()
+  target_compile_options(voxel_viewer PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall;-Wextra;-Wpedantic>)
 endif()
