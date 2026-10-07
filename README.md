@@ -127,10 +127,18 @@ The grid covers x and y in `[-50, 50)` metres and z in `[-5, 3)` metres, with `0
 
 The CPU path maps points, stable-sorts them by voxel index, and reduces adjacent records. CUDA follows the same race-free design: a mapping kernel produces keys and fixed-point features, then stable key sorting and segmented reduction produce deterministic sparse voxel statistics. The benchmark requires an exact CUDA-to-CPU match before it writes timing evidence.
 
-No Milestone 5 performance results are published yet. To run the one-shot workflow, attach a licensed nuScenes dataset to a Kaggle notebook with a Tesla T4 and Internet enabled, then run:
+All implementations passed their correctness gates before timing, including an exact CUDA-to-CPU voxel output match. The measured evidence is saved in [`benchmark-results/voxelization-m5-t4.json`](benchmark-results/voxelization-m5-t4.json). The real sweep contained 34,720 input points: 30,575 were inside the grid, 4,145 were rejected, and 8,057 voxels were occupied.
+
+| Implementation | Scope | Mean (ms) | p95 (ms) | Throughput (Mpoints/s) | Mean speedup vs CPU | p95 speedup vs CPU |
+|---|---|---:|---:|---:|---:|---:|
+| CPU sort/reduce | Operation | 2.106 | 2.304 | 16.5 | — | — |
+| CUDA sort/reduce | Kernel only | 0.396 | 0.414 | 87.7 | 5.32× | 5.57× |
+| CUDA sort/reduce | End to end | 1.048 | 1.140 | 33.1 | 2.01× | 2.02× |
+
+On this Tesla T4 run, CUDA reduced mean voxelization latency by 5.32× for GPU work alone and 2.01× including allocation, transfers, and result download. To reproduce the one-shot workflow, attach a licensed nuScenes dataset to a Kaggle notebook with a Tesla T4 and Internet enabled, then run:
 
 ```bash
 !bash <(curl -fsSL https://raw.githubusercontent.com/areebajamal12/gpu-vision-engine/main/kaggle/run_t4_voxelization_benchmark.sh)
 ```
 
-The script finds the first `samples/LIDAR_TOP/*.pcd.bin` sweep under `/kaggle/input`, runs all tests, performs 10 warm-ups and 100 measured iterations, and writes `/kaggle/working/voxelization-m5-t4.json`. The result records the sweep filename, SHA-256, input/valid/rejected point counts, occupied voxel count, grid definition, environment, timing methodology, mean, p95, throughput, and speedup. The README will only gain performance values after that JSON is verified and committed.
+The script finds the first `samples/LIDAR_TOP/*.pcd.bin` sweep under `/kaggle/input`, runs all tests, performs 10 warm-ups and 100 measured iterations, and writes `/kaggle/working/voxelization-m5-t4.json`. The result records the sweep filename, SHA-256, input/valid/rejected point counts, occupied voxel count, grid definition, environment, timing methodology, mean, p95, throughput, and speedup.

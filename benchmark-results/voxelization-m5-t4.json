@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "correctness_gate_passed": true,
+  "dataset": {"name": "nuScenes", "sample_type": "real_lidar_sweep", "file": "n015-2018-10-08-15-36-50+0800__LIDAR_TOP__1538984251447166.pcd.bin", "sha256": "cd3e7e82eb881908be233469dc4abc4da4d47f1a11897c24e54a77d3786840a6"},
+  "environment": {
+    "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+    "gpu_model": "Tesla T4",
+    "cuda_runtime_version": "12.8",
+    "cuda_toolkit_version": "12.8",
+    "cuda_driver_version": "13.0",
+    "compiler": "13.3.0",
+    "compiler_flags": " -O3 -DNDEBUG ",
+    "cuda_compiler": "NVIDIA 12.8.93",
+    "cuda_compiler_flags": " -O3 -DNDEBUG "
+  },
+  "workload": {"operation": "lidar_voxelization", "input_points": 34720, "valid_points": 30575, "rejected_points": 4145, "occupied_voxels": 8057, "point_fields": ["x", "y", "z", "intensity"], "bounds": {"x": [-50.000000, 50.000000], "y": [-50.000000, 50.000000], "z": [-5.000000, 3.000000]}, "voxel_size": [0.250000, 0.250000, 0.200000], "aggregation": "count and fixed-point sums of x/y/z/intensity"},
+  "protocol": {"warmup_iterations": 10, "measured_iterations": 100, "throughput_basis": "input points", "cpu_timer": "std::chrono::steady_clock", "gpu_kernel_timer": "CUDA events around mapping, stable sort, and reduction", "gpu_end_to_end_timer": "std::chrono::steady_clock around allocation, H2D, GPU work, and D2H"},
+  "results": [
+    {"implementation": "cpu_sort_reduce", "timing_scope": "operation", "mean_ms": 2.106002, "p95_ms": 2.303569, "throughput_million_points_per_second": 16.486211, "exact_match_to_cpu": true, "mean_speedup_vs_cpu": null, "p95_speedup_vs_cpu": null},
+    {"implementation": "cuda_sort_reduce", "timing_scope": "kernel_only", "mean_ms": 0.395877, "p95_ms": 0.413632, "throughput_million_points_per_second": 87.703911, "exact_match_to_cpu": true, "mean_speedup_vs_cpu": 5.319834, "p95_speedup_vs_cpu": 5.569127},
+    {"implementation": "cuda_sort_reduce", "timing_scope": "end_to_end", "mean_ms": 1.048185, "p95_ms": 1.139705, "throughput_million_points_per_second": 33.123910, "exact_match_to_cpu": true, "mean_speedup_vs_cpu": 2.009189, "p95_speedup_vs_cpu": 2.021198}
+  ]
+}
