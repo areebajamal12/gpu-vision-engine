@@ -91,3 +91,17 @@ Reproduce the complete T4 workflow with:
 ```
 
 The result is written to `/kaggle/working/sobel-m3-t4.json`.
+
+## Milestone 4: bilinear image resize
+
+Milestone 4 resizes a 1920×1080 float32 grayscale image to 1280×720 using bilinear interpolation. It includes C++17 CPU, OpenCV reference, naive CUDA, and texture-backed CUDA implementations.
+
+The naive CUDA kernel calculates four source samples and interpolation weights for each output pixel using ordinary global-memory reads. The optimized path uses a CUDA texture object, which provides a cache designed for spatial image access and performs bilinear sampling in hardware. Texture interpolation has limited fractional precision, so its documented OpenCV maximum-absolute-error tolerance is `5e-3`; CPU and naive CUDA use `1e-4`.
+
+Resize results are not published yet. The benchmark refuses to save timing results unless every applicable correctness gate passes. Run the complete T4 workflow with:
+
+```bash
+!bash <(curl -fsSL https://raw.githubusercontent.com/areebajamal12/gpu-vision-engine/main/kaggle/run_t4_resize_benchmark.sh)
+```
+
+The result is written to `/kaggle/working/resize-m4-t4.json`. No resize performance claim will be added until that measured evidence is committed.

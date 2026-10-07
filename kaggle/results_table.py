@@ -8,11 +8,16 @@ with open(sys.argv[1], encoding="utf-8") as handle:
 env = report["environment"]
 workload = report["workload"]
 print(f"\nGPU: {env['gpu_model']}  ")
-if "kernel_size" in workload:
+if workload.get("operation") == "bilinear_resize":
+    description = (f"bilinear resize {workload['input_width']}×{workload['input_height']} → "
+                   f"{workload['output_width']}×{workload['output_height']}")
+elif "kernel_size" in workload:
     description = f"Gaussian kernel {workload['kernel_size']}, sigma {workload['sigma']}"
 else:
     description = workload["operation"]
-print(f"Workload: {workload['width']}×{workload['height']}, {description}\n")
+if "width" in workload:
+    description = f"{workload['width']}×{workload['height']}, {description}"
+print(f"Workload: {description}\n")
 print("| Implementation | Scope | Mean (ms) | p95 (ms) | MP/s | Mean speedup | p95 speedup | Max abs error |")
 print("|---|---|---:|---:|---:|---:|---:|---:|")
 for row in report["results"]:
