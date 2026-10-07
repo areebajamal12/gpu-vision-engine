@@ -35,7 +35,7 @@ if(GVE_HAS_CUDA)
   add_library(gve_cuda src/cuda/gaussian_blur.cu)
   target_include_directories(gve_cuda PUBLIC include)
   target_link_libraries(gve_cuda PUBLIC CUDA::cudart)
-  set_target_properties(gve_cuda PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON CUDA_ARCHITECTURES "75;native")
+  set_target_properties(gve_cuda PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON CUDA_ARCHITECTURES 75)
   target_compile_definitions(gve_cuda PUBLIC GVE_HAS_CUDA=1)
 endif()
 
