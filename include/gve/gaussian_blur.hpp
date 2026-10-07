@@ -22,6 +22,8 @@ struct CudaTiming {
 #ifdef GVE_HAS_CUDA
 cv::Mat gaussian_blur_cuda(const cv::Mat& input, const GaussianParameters& parameters,
                            CudaTiming* timing = nullptr);
+cv::Mat gaussian_blur_cuda_tiled(const cv::Mat& input, const GaussianParameters& parameters,
+                                 CudaTiming* timing = nullptr);
 #endif
 
 }  // namespace gve

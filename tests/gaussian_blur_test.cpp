@@ -47,4 +47,12 @@ TEST(GaussianBlurCuda, MatchesOpenCvReference) {
                       gve::gaussian_blur_opencv(image, parameters)),
             kCudaTolerance);
 }
+
+TEST(GaussianBlurCudaTiled, MatchesOpenCvReference) {
+  const gve::GaussianParameters parameters{9, 2.0};
+  const auto image = test_image();
+  EXPECT_LE(max_error(gve::gaussian_blur_cuda_tiled(image, parameters),
+                      gve::gaussian_blur_opencv(image, parameters)),
+            kCudaTolerance);
+}
 #endif

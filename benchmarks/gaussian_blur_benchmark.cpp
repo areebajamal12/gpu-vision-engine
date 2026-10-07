@@ -20,6 +20,10 @@
 #ifndef GVE_COMPILER_FLAGS
 #define GVE_COMPILER_FLAGS "CMake build-type flags; see CMakeCache.txt"
 #endif
+#ifndef GVE_CUDA_COMPILER
+#define GVE_CUDA_COMPILER "not enabled"
+#define GVE_CUDA_FLAGS "not enabled"
+#endif
 
 namespace {
 using Clock = std::chrono::steady_clock;
@@ -37,6 +41,8 @@ struct Result {
   Statistics statistics;
   double max_error;
   double tolerance;
+  double mean_speedup_vs_naive;
+  double p95_speedup_vs_naive;
 };
 
 Statistics summarize(std::vector<double> values, int width, int height) {
@@ -66,7 +72,7 @@ void write_json(const std::string& path, const std::vector<Result>& results, int
   std::ofstream output(path);
   if (!output) throw std::runtime_error("cannot open output file: " + path);
   output << std::fixed << std::setprecision(6);
-  output << "{\n  \"schema_version\": 1,\n  \"correctness_gate_passed\": true,\n";
+  output << "{\n  \"schema_version\": 2,\n  \"correctness_gate_passed\": true,\n";
   output << "  \"environment\": {\n";
   output << "    \"cpu_model\": \"" << gve::benchmark::json_escape(gve::benchmark::cpu_model())
          << "\",\n";
@@ -77,6 +83,10 @@ void write_json(const std::string& path, const std::vector<Result>& results, int
   output << "    \"cuda_driver_version\": \"" << gve::benchmark::cuda_driver_version() << "\",\n";
   output << "    \"compiler\": \"" << gve::benchmark::json_escape(__VERSION__) << "\",\n";
   output << "    \"compiler_flags\": \"" << gve::benchmark::json_escape(GVE_COMPILER_FLAGS)
+         << "\",\n";
+  output << "    \"cuda_compiler\": \"" << gve::benchmark::json_escape(GVE_CUDA_COMPILER)
+         << "\",\n";
+  output << "    \"cuda_compiler_flags\": \"" << gve::benchmark::json_escape(GVE_CUDA_FLAGS)
          << "\"\n  },\n";
   output << "  \"workload\": {\"width\": " << width << ", \"height\": " << height
          << ", \"pixel_format\": \"float32_grayscale\", \"kernel_size\": " << parameters.kernel_size
@@ -93,7 +103,18 @@ void write_json(const std::string& path, const std::vector<Result>& results, int
     output << "    {\"implementation\": \"" << r.backend << "\", \"timing_scope\": \"" << r.scope
            << "\", \"mean_ms\": " << r.statistics.mean << ", \"p95_ms\": " << r.statistics.p95
            << ", \"throughput_megapixels_per_second\": " << r.statistics.megapixels_per_second
-           << ", \"max_abs_error\": " << r.max_error << ", \"tolerance\": " << r.tolerance << "}";
+           << ", \"max_abs_error\": " << r.max_error << ", \"tolerance\": " << r.tolerance
+           << ", \"mean_speedup_vs_naive\": ";
+    if (r.mean_speedup_vs_naive > 0.0)
+      output << r.mean_speedup_vs_naive;
+    else
+      output << "null";
+    output << ", \"p95_speedup_vs_naive\": ";
+    if (r.p95_speedup_vs_naive > 0.0)
+      output << r.p95_speedup_vs_naive;
+    else
+      output << "null";
+    output << "}";
     output << (i + 1 == results.size() ? "\n" : ",\n");
   }
   output << "  ]\n}\n";
@@ -117,11 +138,11 @@ int main(int argc, char** argv) {
     auto cpu_samples =
         measure_cpu([&] { sink = gve::gaussian_blur_cpu(image, parameters); }, warmups, iterations);
     results.push_back({"cpu_separable", "operation", summarize(cpu_samples, width, height),
-                       cpu_error, kCpuTolerance});
+                       cpu_error, kCpuTolerance, 0.0, 0.0});
     auto opencv_samples = measure_cpu([&] { sink = gve::gaussian_blur_opencv(image, parameters); },
                                       warmups, iterations);
-    results.push_back(
-        {"opencv_reference", "operation", summarize(opencv_samples, width, height), 0.0, 0.0});
+    results.push_back({"opencv_reference", "operation", summarize(opencv_samples, width, height),
+                       0.0, 0.0, 0.0, 0.0});
 
 #ifdef GVE_HAS_CUDA
     const cv::Mat cuda_check = gve::gaussian_blur_cuda(image, parameters);
@@ -136,9 +157,31 @@ int main(int argc, char** argv) {
       end_to_end_samples.push_back(timing.end_to_end_ms);
     }
     results.push_back({"cuda_naive", "kernel_only", summarize(kernel_samples, width, height),
-                       cuda_error, kCudaTolerance});
+                       cuda_error, kCudaTolerance, 1.0, 1.0});
     results.push_back({"cuda_naive", "end_to_end", summarize(end_to_end_samples, width, height),
-                       cuda_error, kCudaTolerance});
+                       cuda_error, kCudaTolerance, 1.0, 1.0});
+
+    const cv::Mat tiled_check = gve::gaussian_blur_cuda_tiled(image, parameters);
+    const double tiled_error = cv::norm(tiled_check, reference, cv::NORM_INF);
+    if (tiled_error > kCudaTolerance)
+      throw std::runtime_error("CUDA tiled correctness gate failed");
+    for (int i = 0; i < warmups; ++i) sink = gve::gaussian_blur_cuda_tiled(image, parameters);
+    std::vector<double> tiled_kernel_samples, tiled_end_to_end_samples;
+    for (int i = 0; i < iterations; ++i) {
+      gve::CudaTiming timing;
+      sink = gve::gaussian_blur_cuda_tiled(image, parameters, &timing);
+      tiled_kernel_samples.push_back(timing.kernel_ms);
+      tiled_end_to_end_samples.push_back(timing.end_to_end_ms);
+    }
+    const Statistics naive_kernel = results[2].statistics;
+    const Statistics naive_end_to_end = results[3].statistics;
+    const Statistics tiled_kernel = summarize(tiled_kernel_samples, width, height);
+    const Statistics tiled_end_to_end = summarize(tiled_end_to_end_samples, width, height);
+    results.push_back({"cuda_tiled", "kernel_only", tiled_kernel, tiled_error, kCudaTolerance,
+                       naive_kernel.mean / tiled_kernel.mean, naive_kernel.p95 / tiled_kernel.p95});
+    results.push_back({"cuda_tiled", "end_to_end", tiled_end_to_end, tiled_error, kCudaTolerance,
+                       naive_end_to_end.mean / tiled_end_to_end.mean,
+                       naive_end_to_end.p95 / tiled_end_to_end.p95});
 #endif
 
     write_json(output_path, results, width, height, parameters, warmups, iterations);

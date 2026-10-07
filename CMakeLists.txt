@@ -47,7 +47,9 @@ if(GVE_BUILD_BENCHMARKS)
     GVE_COMPILER_FLAGS="${CMAKE_CXX_FLAGS} $<$<CONFIG:Release>:${CMAKE_CXX_FLAGS_RELEASE}> $<$<CONFIG:Debug>:${CMAKE_CXX_FLAGS_DEBUG}>")
   if(GVE_HAS_CUDA)
     target_link_libraries(gaussian_blur_benchmark PRIVATE gve_cuda CUDA::cudart)
-    target_compile_definitions(gaussian_blur_benchmark PRIVATE GVE_HAS_CUDA=1)
+    target_compile_definitions(gaussian_blur_benchmark PRIVATE GVE_HAS_CUDA=1
+      GVE_CUDA_COMPILER="${CMAKE_CUDA_COMPILER_ID} ${CMAKE_CUDA_COMPILER_VERSION}"
+      GVE_CUDA_FLAGS="${CMAKE_CUDA_FLAGS} $<$<CONFIG:Release>:${CMAKE_CUDA_FLAGS_RELEASE}> $<$<CONFIG:Debug>:${CMAKE_CUDA_FLAGS_DEBUG}>")
   endif()
 endif()
 

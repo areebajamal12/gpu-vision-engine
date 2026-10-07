@@ -14,6 +14,8 @@ _deps/
 .venv/
 venv/
 *.egg-info/
+__pycache__/
+*.pyc
 
 # Data and large local assets
 data/

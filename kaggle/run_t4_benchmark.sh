@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPOSITORY_URL="${REPOSITORY_URL:-https://github.com/areebajamal12/gpu-vision-engine.git}"
-RESULT_PATH="${RESULT_PATH:-/kaggle/working/gaussian-blur-t4.json}"
+RESULT_PATH="${RESULT_PATH:-/kaggle/working/gaussian-blur-m2-t4.json}"
 
 echo "## GPU environment"
 nvidia-smi
