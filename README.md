@@ -98,17 +98,19 @@ Workload: 1920×1080 to 1280×720 float32. Evidence: [resize-m4-t4.json](benchma
 
 ## Interactive nuScenes viewer
 
-The optional OpenGL viewer makes the LiDAR pipeline tangible without adding a dependency to the library, tests, benchmarks, or CI. It loads a real nuScenes `.pcd.bin` sweep, runs CPU voxelization, and overlays intensity-colored input points with occupancy-colored voxel centers.
+The optional OpenGL viewer makes the LiDAR pipeline tangible without adding a dependency to the library, tests, benchmarks, or CI. It loads a real nuScenes `.pcd.bin` sweep and overlays intensity-colored input points with occupancy-colored voxel centers. When CUDA is detected, those voxel statistics are produced by the same deterministic CUDA implementation used by the benchmark; CPU voxelization is the portable fallback.
 
 ```bash
 cmake -S . -B build-viewer -DCMAKE_BUILD_TYPE=Release \
-  -DGVE_ENABLE_CUDA=OFF -DGVE_BUILD_TESTS=OFF \
+  -DGVE_BUILD_TESTS=OFF \
   -DGVE_BUILD_BENCHMARKS=OFF -DGVE_BUILD_VIEWER=ON
 cmake --build build-viewer --parallel
 ./build-viewer/voxel_viewer /path/to/samples/LIDAR_TOP/<sweep>.pcd.bin
 ```
 
-GLFW is fetched only when `GVE_BUILD_VIEWER=ON`; OpenGL must be available on the host. Drag with the left mouse button to orbit, scroll to zoom, press `1` for points, `2` for voxels, `3` for both, and `R` to reset. The viewer is excluded from headless CI and has no benchmark claims.
+GLFW is fetched only when `GVE_BUILD_VIEWER=ON`; OpenGL must be available on the host. Drag with the left mouse button to orbit, scroll to zoom, press `1` for points, `2` for voxels, `3` for both, and `R` to reset. Press `S` to save a clean `voxel-viewer.ppm` frame for a README image or portfolio asset. On macOS without CUDA, add `-DGVE_ENABLE_CUDA=OFF` explicitly if needed.
+
+The in-window overlay labels the active voxelization backend and displays the verified Tesla T4 CPU, CUDA kernel-only, and end-to-end measurements from [`voxelization-m5-t4.json`](benchmark-results/voxelization-m5-t4.json). These are evidence annotations—not measurements performed by the viewer. The viewer remains excluded from headless CI and adds no visualization benchmark claims.
 
 ## Build and test
 
