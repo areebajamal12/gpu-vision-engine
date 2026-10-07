@@ -71,10 +71,23 @@ Milestone 3 computes 3×3 Sobel horizontal and vertical gradients and combines t
 
 The naive CUDA kernel reads each pixel's 3×3 neighborhood from global memory. The tiled kernel has a 32×8 thread block cooperatively load a 34×10 tile, including a one-pixel halo, into shared memory. Neighboring threads then reuse those values for both gradient directions, reducing repeated global reads while keeping contiguous loads where practical.
 
-Sobel results are not published yet. The benchmark refuses to save timing results unless CPU output is within `1e-4` and each CUDA output is within `1e-3` maximum absolute error of OpenCV. Run the complete T4 workflow with:
+All implementations passed their correctness gates before timing: CPU output was within `1e-4` and each CUDA output was within `1e-3` maximum absolute error of OpenCV. The evidence is saved in [`benchmark-results/sobel-m3-t4.json`](benchmark-results/sobel-m3-t4.json).
+
+| Implementation | Scope | Mean (ms) | p95 (ms) | Throughput (MP/s) | Mean speedup | p95 speedup |
+|---|---|---:|---:|---:|---:|---:|
+| CPU Sobel | Operation | 17.924 | 18.606 | 115.7 | — | — |
+| OpenCV reference | Operation | 3.931 | 4.115 | 527.5 | — | — |
+| CUDA naive | Kernel only | 0.114 | 0.138 | 18182.2 | 1.00× | 1.00× |
+| CUDA naive | End to end | 3.824 | 3.971 | 542.3 | 1.00× | 1.00× |
+| CUDA tiled | Kernel only | 0.116 | 0.131 | 17907.1 | 0.98× | 1.05× |
+| CUDA tiled | End to end | 3.825 | 4.057 | 542.1 | 1.00× | 0.98× |
+
+For this 3×3 stencil, shared-memory tiling did not improve mean latency on the T4: tiled kernel-only mean was about 1.5% slower, while its p95 was about 5.2% lower. End-to-end latency was effectively unchanged and dominated by allocation and transfers.
+
+Reproduce the complete T4 workflow with:
 
 ```bash
 !bash <(curl -fsSL https://raw.githubusercontent.com/areebajamal12/gpu-vision-engine/main/kaggle/run_t4_sobel_benchmark.sh)
 ```
 
-The result is written to `/kaggle/working/sobel-m3-t4.json`. No Sobel performance claim will be added until that measured evidence is committed.
+The result is written to `/kaggle/working/sobel-m3-t4.json`.
