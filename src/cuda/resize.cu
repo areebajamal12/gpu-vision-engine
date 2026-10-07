@@ -76,10 +76,10 @@ cv::Mat run_resize_cuda(const cv::Mat& input, cv::Size output_size, CudaTiming* 
     const cudaChannelFormatDesc channel = cudaCreateChannelDesc<float>();
     check_resize(cudaMallocArray(&input_array, &channel, input.cols, input.rows),
                  "cudaMallocArray input");
-    check_resize(cudaMemcpy2DToArray(input_array, 0, 0, input.ptr<float>(),
-                                    input.cols * sizeof(float), input.cols * sizeof(float),
-                                    input.rows, cudaMemcpyHostToDevice),
-                 "copy input to CUDA array");
+    check_resize(
+        cudaMemcpy2DToArray(input_array, 0, 0, input.ptr<float>(), input.cols * sizeof(float),
+                            input.cols * sizeof(float), input.rows, cudaMemcpyHostToDevice),
+        "copy input to CUDA array");
     cudaResourceDesc resource{};
     resource.resType = cudaResourceTypeArray;
     resource.res.array.array = input_array;
