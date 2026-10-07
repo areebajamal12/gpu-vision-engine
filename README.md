@@ -64,3 +64,17 @@ Download `/kaggle/working/gaussian-blur-m2-t4.json` after the run. The script ve
 ## Roadmap
 
 Future milestones may add additional image kernels and LiDAR operations. No performance claim is made for unmeasured work.
+
+## Milestone 3: Sobel edge detection
+
+Milestone 3 computes 3×3 Sobel horizontal and vertical gradients and combines them into a float32 gradient magnitude image. It includes C++17 CPU, OpenCV reference, naive CUDA, and shared-memory-tiled CUDA implementations. All use replicate borders on the same 1920×1080 workload.
+
+The naive CUDA kernel reads each pixel's 3×3 neighborhood from global memory. The tiled kernel has a 32×8 thread block cooperatively load a 34×10 tile, including a one-pixel halo, into shared memory. Neighboring threads then reuse those values for both gradient directions, reducing repeated global reads while keeping contiguous loads where practical.
+
+Sobel results are not published yet. The benchmark refuses to save timing results unless CPU output is within `1e-4` and each CUDA output is within `1e-3` maximum absolute error of OpenCV. Run the complete T4 workflow with:
+
+```bash
+!bash <(curl -fsSL https://raw.githubusercontent.com/areebajamal12/gpu-vision-engine/main/kaggle/run_t4_sobel_benchmark.sh)
+```
+
+The result is written to `/kaggle/working/sobel-m3-t4.json`. No Sobel performance claim will be added until that measured evidence is committed.

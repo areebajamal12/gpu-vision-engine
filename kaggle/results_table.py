@@ -8,7 +8,11 @@ with open(sys.argv[1], encoding="utf-8") as handle:
 env = report["environment"]
 workload = report["workload"]
 print(f"\nGPU: {env['gpu_model']}  ")
-print(f"Workload: {workload['width']}×{workload['height']}, kernel {workload['kernel_size']}, sigma {workload['sigma']}\n")
+if "kernel_size" in workload:
+    description = f"Gaussian kernel {workload['kernel_size']}, sigma {workload['sigma']}"
+else:
+    description = workload["operation"]
+print(f"Workload: {workload['width']}×{workload['height']}, {description}\n")
 print("| Implementation | Scope | Mean (ms) | p95 (ms) | MP/s | Mean speedup | p95 speedup | Max abs error |")
 print("|---|---|---:|---:|---:|---:|---:|---:|")
 for row in report["results"]:
