@@ -1,6 +1,6 @@
 # gpu-vision-engine
 
-A C++17/CUDA library for hand-written image and LiDAR processing kernels, with CPU and OpenCV reference implementations. Milestones 1 and 2 implement baseline and shared-memory-tiled separable Gaussian blur for a 1920×1080 float32 grayscale image.
+A C++17/CUDA library for hand-written image and LiDAR processing kernels, with CPU and OpenCV reference implementations. The implemented milestones cover Gaussian blur, Sobel edge detection, and bilinear image resize.
 
 ## Measured results
 
@@ -98,10 +98,23 @@ Milestone 4 resizes a 1920×1080 float32 grayscale image to 1280×720 using bili
 
 The naive CUDA kernel calculates four source samples and interpolation weights for each output pixel using ordinary global-memory reads. The optimized path uses a CUDA texture object, which provides a cache designed for spatial image access and performs bilinear sampling in hardware. Texture interpolation has limited fractional precision, so its documented OpenCV maximum-absolute-error tolerance is `5e-3`; CPU and naive CUDA use `1e-4`.
 
-Resize results are not published yet. The benchmark refuses to save timing results unless every applicable correctness gate passes. Run the complete T4 workflow with:
+All implementations passed their correctness gates before timing. The measured evidence is saved in [`benchmark-results/resize-m4-t4.json`](benchmark-results/resize-m4-t4.json).
+
+| Implementation | Scope | Mean (ms) | p95 (ms) | Throughput (MP/s) | Mean speedup | p95 speedup |
+|---|---|---:|---:|---:|---:|---:|
+| CPU bilinear | Operation | 8.817 | 9.173 | 104.5 | — | — |
+| OpenCV reference | Operation | 0.746 | 0.874 | 1235.8 | — | — |
+| CUDA naive | Kernel only | 0.054 | 0.058 | 16995.2 | 1.00× | 1.00× |
+| CUDA naive | End to end | 2.800 | 2.900 | 329.1 | 1.00× | 1.00× |
+| CUDA texture | Kernel only | 0.055 | 0.057 | 16730.4 | 0.98× | 1.02× |
+| CUDA texture | End to end | 2.780 | 2.859 | 331.5 | 1.01× | 1.01× |
+
+On this T4 workload, the texture path did not improve mean kernel-only latency: it was about 1.6% slower than the naive kernel. End-to-end mean was about 0.7% lower, while transfers and allocation dominated both paths.
+
+Run the complete T4 workflow with:
 
 ```bash
 !bash <(curl -fsSL https://raw.githubusercontent.com/areebajamal12/gpu-vision-engine/main/kaggle/run_t4_resize_benchmark.sh)
 ```
 
-The result is written to `/kaggle/working/resize-m4-t4.json`. No resize performance claim will be added until that measured evidence is committed.
+The result is written to `/kaggle/working/resize-m4-t4.json`.
