@@ -1,0 +1,21 @@
+name: CPU build and test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OpenCV
+        run: brew install opencv
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGVE_ENABLE_CUDA=OFF
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Format check
+        run: find include src tests benchmarks -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.cu' \) -print0 | xargs -0 clang-format --dry-run --Werror

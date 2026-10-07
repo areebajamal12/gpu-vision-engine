@@ -1,0 +1,50 @@
+# Build trees and IDE output
+build*/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+.cache/
+.vscode/
+.idea/
+.DS_Store
+
+# Dependencies and local environments
+_deps/
+.venv/
+venv/
+*.egg-info/
+
+# Data and large local assets
+data/
+datasets/
+*.bag
+*.pcap
+*.npy
+*.npz
+*.bin
+*.onnx
+
+# Generated benchmark and profiling artifacts
+benchmark-results/*.json
+!benchmark-results/.gitkeep
+profiles/
+*.nsys-rep
+*.qdrep
+*.nvvp
+*.prof
+
+# Compiler output
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*~
